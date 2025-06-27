@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Monitoramento de Áreas - Geral</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #198754, #20c997);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #157347;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #bb2d3b;
+            transform: translateY(-1px);
+        }
+        
+        .btn-info {
+            background-color: #0dcaf0;
+            color: #000;
+        }
+        
+        .btn-info:hover {
+            background-color: #31d2f2;
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .btn-warning:hover {
+            background-color: #ffcd39;
+            transform: translateY(-1px);
+        }
+        
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-execucao {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        .status-concluida {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .status-inativa {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .status-aguardando {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .status-pausada {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        
+        .area-info {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .area-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .area-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .area-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .area-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .location-status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .location-success {
+            background-color: #d1edff;
+            color: #0c63e4;
+            border: 1px solid #b8daff;
+        }
+        
+        .location-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Modal para cadastro de área */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        
+        /* Animação para o marcador de localização do usuário */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        /* Responsividade para dispositivos móveis */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                justify-content: center;
+                margin-bottom: 5px;
+            }
+            
+            .area-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            #map {
+                height: 300px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-map-marked-alt"></i> Sistema de Monitoramento de Áreas</h1>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">Nova Odessa - Controle de Atividades</p>
+        </div>
+        
+        <div class="controls">
+            <button id="btnLocalizarUsuario" class="btn btn-primary">
+                <i class="fas fa-location-arrow"></i>
+                Minha Localização
+            </button>
+            
+            <button id="btnVerTodasAreas" class="btn btn-success">
+                <i class="fas fa-eye"></i>
+                Ver Todas as Áreas
+            </button>
+
+            <button id="btnIniciarTarefaNaMinhaArea" class="btn btn-info">
+                <i class="fas fa-play-circle"></i>
+                Iniciar Tarefa na Minha Área
+            </button>
+            
+            <button id="btnNovaArea" class="btn btn-warning">
+                <i class="fas fa-plus"></i>
+                Nova Área
+            </button>
+            
+            <div id="locationStatus" class="location-status" style="display: none;"></div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="area-info">
+            <h3><i class="fas fa-list"></i> Áreas Monitoradas</h3>
+            <div class="area-cards" id="areaCards">
+                <!-- Cards das áreas serão inseridos aqui dinamicamente -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Carregando mapa...</p>
+    </div>
+
+    <!-- Modal para cadastro de nova área -->
+    <div id="modalNovaArea" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-map-marker-alt"></i> Cadastrar Nova Área</h2>
+            <form id="formNovaArea">
+                <div class="form-group">
+                    <label for="nomeArea">Nome da Área:</label>
+                    <input type="text" id="nomeArea" name="nomeArea" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descricaoArea">Descrição:</label>
+                    <textarea id="descricaoArea" name="descricaoArea" placeholder="Descreva a finalidade desta área..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="statusArea">Status Inicial:</label>
+                    <select id="statusArea" name="statusArea">
+                        <option value="aguardando">Aguardando</option>
+                        <option value="inativa">Inativa</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="areaPrincipal">Área Principal:</label>
+                    <select id="areaPrincipal" name="areaPrincipal">
+                        <option value="">Esta é uma área principal</option>
+                    </select>
+                </div>
+                
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" id="btnCancelar" class="btn btn-danger" style="margin-right: 10px;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Salvar Área
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    
+    <script>
+        // CONFIGURAÇÃO DO FIREBASE
+        // SUBSTITUA PELAS SUAS CREDENCIAIS DO FIREBASE
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "SEU_AUTH_DOMAIN_AQUI",
+            projectId: "SEU_PROJECT_ID_AQUI",
+            storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+            appId: "SEU_APP_ID_AQUI"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Variáveis globais
+        let map;
+        let userLocationMarker;
+        let areas = {};
+        let drawControl;
+        let drawnItems;
+        let currentDrawnPolygon = null;
+        
+        // Configuração das áreas (dados iniciais - serão carregados do Firebase)
+        let areasConfig = {
+            'area01': {
+                nome: 'Área 01',
+                coords: [
+                    [-22.74802394492481, -47.15697375012292],
+                    [-22.747275121733605, -47.15598567604],
+                    [-22.74747360538878, -47.15395083040387],
+                    [-22.749684553716207, -47.154109601056966],
+                    [-22.74919471486596, -47.15550389764504],
+                    [-22.749347789695303, -47.15578054379347],
+                ],
+                status: 'aguardando',
+                descricao: 'Área de Futebol',
+                areaPrincipal: null
+            },
+            'area02': {
+                nome: 'Área 02',
+                coords: [
+                    [-22.749439561888387, -47.15573479394563],
+                    [-22.74922651577272, -47.15551340163666],
+                    [-22.75019409754315, -47.15371338590723],
+                    [-22.75117054926399, -47.154064725875806],
+                    [-22.75034944260188, -47.1550273011322],
+                    [-22.74947950799809, -47.15572516819308],
+                ],
+                status: 'aguardando',
+                descricao: 'Área de teste Medico',
+                areaPrincipal: null
+            }
+        };
+        
+        // Estilos para diferentes status
+        const estilos = {
+            principal: {
+                color: '#198754',
+                fillColor: '#19875433',
+                fillOpacity: 0.5,
+                weight: 2
+            },
+            execucao: {
+                color: '#0d6efd',
+                fillColor: '#0d6efd66',
+                fillOpacity: 0.6,
+                weight: 2
+            },
+            concluida: {
+                color: '#198754',
+                fillColor: '#19875433',
+                fillOpacity: 0.5,
+                weight: 2
+            },
+            inativa: {
+                color: '#6c757d',
+                fillColor: '#6c757d',
+                fillOpacity: 0.5,
+                weight: 2
+            },
+            aguardando: {
+                color: '#ffc107',
+                fillColor: '#ffc10766',
+                fillOpacity: 0.6,
+                weight: 2
+            },
+            pausada: {
+                color: '#dc3545',
+                fillColor: '#dc354577',
+                fillOpacity: 0.7,
+                weight: 2
+            }
+        };
+        
+        // Função para carregar áreas do Firebase
+        function carregarAreasDoFirebase() {
+            db.collection("areas").get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const areaId = doc.id;
+                    const data = doc.data();
+                    
+                    // Adiciona ou atualiza a área no areasConfig
+                    areasConfig[areaId] = {
+                        nome: data.nome,
+                        coords: data.coords,
+                        status: data.status,
+                        descricao: data.descricao,
+                        areaPrincipal: data.areaPrincipal || null,
+                        dataInicio: data.dataInicio,
+                        dataConclusao: data.dataConclusao
+                    };
+                });
+                
+                // Após carregar, inicializa o mapa
+                inicializarMapa();
+                atualizarCards();
+            }).catch((error) => {
+                console.error("Erro ao carregar áreas: ", error);
+                // Se houver erro, usa os dados padrão
+                inicializarMapa();
+                atualizarCards();
+            });
+        }
+        
+        // Função para salvar área no Firebase
+        function salvarAreaNoFirebase(areaId, areaData) {
+            return db.collection("areas").doc(areaId).set(areaData, { merge: true });
+        }
+        
+        // Função para obter localização do usuário
+        function obterLocalizacaoUsuario() {
+            const statusDiv = document.getElementById('locationStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'location-status';
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obtendo sua localização...';
+            
+            if (!navigator.geolocation) {
+                statusDiv.className = 'location-status location-error';
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Geolocalização não suportada pelo navegador';
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Remove marcador anterior se existir
+                    if (userLocationMarker) {
+                        map.removeLayer(userLocationMarker);
+                    }
+                    
+                    // Cria ícone personalizado para localização do usuário
+                    const userIcon = L.divIcon({
+                        className: 'user-location-icon',
+                        html: '<div style="background-color: #007bff; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); position: relative;"><div style="position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border-radius: 50%; background-color: rgba(0,123,255,0.3); animation: pulse 2s infinite;"></div></div>',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+                    
+                    // Adiciona marcador da localização do usuário
+                    userLocationMarker = L.marker([lat, lng], { icon: userIcon })
+                        .addTo(map)
+                        .bindPopup('<b><i class="fas fa-user"></i> Sua Localização</b><br>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6));
+                    
+                    // Centraliza o mapa na localização do usuário
+                    map.setView([lat, lng], 16);
+                    
+                    statusDiv.className = 'location-status location-success';
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Localização obtida com sucesso!';
+                    
+                    // Remove a mensagem após 3 segundos
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 3000);
+                },
+                function(error) {
+                    let errorMessage = 'Erro ao obter localização: ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Permissão negada pelo usuário';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Localização indisponível';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Tempo limite excedido';
+                            break;
+                        default:
+                            errorMessage += 'Erro desconhecido';
+                            break;
+                    }
+                    
+                    statusDiv.className = 'location-status location-error';
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + errorMessage;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+        
+        // Função para focar em uma área específica
+        function focarArea(areaId) {
+            if (areas[areaId]) {
+                const bounds = areas[areaId].getBounds();
+                map.fitBounds(bounds, { padding: [20, 20] });
+                areas[areaId].openPopup();
+            }
+        }
+        
+        // Função para iniciar atividade em uma área
+        function iniciarAtividade(areaId) {
+            if (confirm('Deseja iniciar a atividade na ' + areasConfig[areaId].nome + '?')) {
+                // Atualiza o status da área
+                areasConfig[areaId].status = 'execucao';
+                areasConfig[areaId].dataInicio = new Date().toISOString();
+                
+                // Salva no Firebase
+                salvarAreaNoFirebase(areaId, areasConfig[areaId]).then(() => {
+                    console.log("Status atualizado no Firebase");
+                }).catch((error) => {
+                    console.error("Erro ao atualizar status: ", error);
+                });
+                
+                // Atualiza o estilo visual da área
+                areas[areaId].setStyle(estilos.execucao);
+                
+                // Atualiza o popup
+                areas[areaId].setPopupContent(criarPopupContent(areaId));
+                
+                // Atualiza os cards
+                atualizarCards();
+                
+                alert('Atividade iniciada na ' + areasConfig[areaId].nome + '!');
+            }
+        }
+        
+        // Função para pausar atividade em uma área
+        function pausarAtividade(areaId) {
+            if (confirm('Deseja pausar a atividade na ' + areasConfig[areaId].nome + '?')) {
+                areasConfig[areaId].status = 'pausada';
+                
+                // Salva no Firebase
+                salvarAreaNoFirebase(areaId, areasConfig[areaId]).then(() => {
+                    console.log("Status atualizado no Firebase");
+                }).catch((error) => {
+                    console.error("Erro ao atualizar status: ", error);
+                });
+                
+                areas[areaId].setStyle(estilos.pausada);
+                areas[areaId].setPopupContent(criarPopupContent(areaId));
+                atualizarCards();
+                alert('Atividade pausada na ' + areasConfig[areaId].nome + '!');
+            }
+        }
+        
+        // Função para concluir atividade em uma área
+        function concluirAtividade(areaId) {
+            if (confirm('Deseja concluir a atividade na ' + areasConfig[areaId].nome + '?')) {
+                areasConfig[areaId].status = 'concluida';
+                areasConfig[areaId].dataConclusao = new Date().toISOString();
+                
+                // Salva no Firebase
+                salvarAreaNoFirebase(areaId, areasConfig[areaId]).then(() => {
+                    console.log("Status atualizado no Firebase");
+                }).catch((error) => {
+                    console.error("Erro ao atualizar status: ", error);
+                });
+                
+                areas[areaId].setStyle(estilos.concluida);
+                areas[areaId].setPopupContent(criarPopupContent(areaId));
+                atualizarCards();
+                alert('Atividade concluída na ' + areasConfig[areaId].nome + '!');
+            }
+        }
+        
+        // Função para criar conteúdo do popup
+        function criarPopupContent(areaId) {
+            const area = areasConfig[areaId];
+            let statusClass = 'status-' + area.status;
+            let statusText = area.status.charAt(0).toUpperCase() + area.status.slice(1);
+            
+            let botoes = '';
+            if (area.status === 'aguardando') {
+                botoes = '<button onclick="iniciarAtividade(\'' + areaId + '\')" class="btn btn-primary" style="margin-top: 10px; font-size: 12px; padding: 5px 10px;">Iniciar</button>';
+            } else if (area.status === 'execucao') {
+                botoes = '<button onclick="pausarAtividade(\'' + areaId + '\')" class="btn btn-danger" style="margin-top: 10px; font-size: 12px; padding: 5px 10px; margin-right: 5px;">Pausar</button>';
+                botoes += '<button onclick="concluirAtividade(\'' + areaId + '\')" class="btn btn-success" style="margin-top: 10px; font-size: 12px; padding: 5px 10px;">Concluir</button>';
+            } else if (area.status === 'pausada') {
+                botoes = '<button onclick="iniciarAtividade(\'' + areaId + '\')" class="btn btn-primary" style="margin-top: 10px; font-size: 12px; padding: 5px 10px; margin-right: 5px;">Retomar</button>';
+                botoes += '<button onclick="concluirAtividade(\'' + areaId + '\')" class="btn btn-success" style="margin-top: 10px; font-size: 12px; padding: 5px 10px;">Concluir</button>';
+            }
+            
+            let hierarquia = '';
+            if (area.areaPrincipal) {
+                hierarquia = '<br><small><i class="fas fa-sitemap"></i> Subárea de: ' + areasConfig[area.areaPrincipal]?.nome + '</small>';
+            }
+            
+            return '<b>' + area.nome + '</b><br>' +
+                   '<span class="status-indicator ' + statusClass + '">' + statusText + '</span><br>' +
+                   '<small>' + area.descricao + '</small>' +
+                   hierarquia +
+                   botoes;
+        }
+        
+        // Função para atualizar os cards das áreas
+        function atualizarCards() {
+            const cardsContainer = document.getElementById('areaCards');
+            cardsContainer.innerHTML = '';
+            
+            Object.keys(areasConfig).forEach(areaId => {
+                const area = areasConfig[areaId];
+                let statusClass = 'status-' + area.status;
+                let statusText = area.status.charAt(0).toUpperCase() + area.status.slice(1);
+                
+                let hierarquia = '';
+                if (area.areaPrincipal) {
+                    hierarquia = '<p><small><i class="fas fa-sitemap"></i> Subárea de: ' + areasConfig[area.areaPrincipal]?.nome + '</small></p>';
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'area-card';
+                card.innerHTML = `
+                    <h4>${area.nome}</h4>
+                    <p><span class="status-indicator ${statusClass}">${statusText}</span></p>
+                    <p><small>${area.descricao}</small></p>
+                    ${hierarquia}
+                    <button onclick="focarArea('${areaId}')" class="btn btn-primary" style="font-size: 12px; padding: 5px 10px;">
+                        <i class="fas fa-map-marker-alt"></i> Ver no Mapa
+                    </button>
+                `;
+                cardsContainer.appendChild(card);
+            });
+        }
+        
+        // Função para popular o select de áreas principais
+        function popularSelectAreasPrincipais() {
+            const select = document.getElementById('areaPrincipal');
+            select.innerHTML = '<option value="">Esta é uma área principal</option>';
+            
+            Object.keys(areasConfig).forEach(areaId => {
+                const area = areasConfig[areaId];
+                if (!area.areaPrincipal) { // Apenas áreas principais
+                    const option = document.createElement('option');
+                    option.value = areaId;
+                    option.textContent = area.nome;
+                    select.appendChild(option);
+                }
+            });
+        }
+        
+        // Função para inicializar o mapa
+        function inicializarMapa() {
+            // Coordenadas centrais de Nova Odessa
+            const centroNovaOdessa = [-22.7486, -47.1504];
+            
+            // Inicializa o mapa
+            map = L.map('map').setView(centroNovaOdessa, 15);
+            
+            // Adiciona camada de tiles do OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Inicializa o grupo de desenhos
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+            
+            // Configura os controles de desenho
+            drawControl = new L.Control.Draw({
+                position: 'topright',
+                draw: {
+                    polygon: {
+                        allowIntersection: false,
+                        drawError: {
+                            color: '#e1e100',
+                            message: '<strong>Erro!</strong> As bordas do polígono não podem se cruzar!'
+                        },
+                        shapeOptions: {
+                            color: '#97009c'
+                        }
+                    },
+                    polyline: false,
+                    rectangle: false,
+                    circle: false,
+                    marker: false,
+                    circlemarker: false
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: false
+                }
+            });
+            
+            // Adiciona as áreas existentes ao mapa
+            Object.keys(areasConfig).forEach(areaId => {
+                const area = areasConfig[areaId];
+                const estilo = estilos[area.status] || estilos.principal;
+                
+                const polygon = L.polygon(area.coords, estilo)
+                    .addTo(map)
+                    .bindPopup(criarPopupContent(areaId));
+                
+                areas[areaId] = polygon;
+            });
+            
+            // Event listener para quando um polígono é desenhado
+            map.on('draw:created', function (e) {
+                const layer = e.layer;
+                currentDrawnPolygon = layer;
+                drawnItems.addLayer(layer);
+                
+                // Abre o modal para cadastro
+                document.getElementById('modalNovaArea').style.display = 'block';
+                popularSelectAreasPrincipais();
+            });
+        }
+        
+        // Função para verificar se o usuário está dentro de alguma área
+        function verificarAreaUsuario(lat, lng) {
+            for (let areaId in areas) {
+                const polygon = areas[areaId];
+                const point = L.latLng(lat, lng);
+                
+                // Verifica se o ponto está dentro do polígono
+                if (polygon.getBounds().contains(point)) {
+                    // Verificação mais precisa usando ray casting
+                    const coords = areasConfig[areaId].coords;
+                    if (pontoDentroPoligono(lat, lng, coords)) {
+                        return areaId;
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Algoritmo de ray casting para verificar se um ponto está dentro de um polígono
+        function pontoDentroPoligono(lat, lng, coords) {
+            let dentro = false;
+            let j = coords.length - 1;
+            
+            for (let i = 0; i < coords.length; i++) {
+                const xi = coords[i][0], yi = coords[i][1];
+                const xj = coords[j][0], yj = coords[j][1];
+                
+                if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) {
+                    dentro = !dentro;
+                }
+                j = i;
+            }
+            
+            return dentro;
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Carrega áreas do Firebase e inicializa o mapa
+            carregarAreasDoFirebase();
+            
+            document.getElementById('btnLocalizarUsuario').addEventListener('click', obterLocalizacaoUsuario);
+            
+            document.getElementById('btnVerTodasAreas').addEventListener('click', function() {
+                // Calcula os bounds de todas as áreas
+                const group = new L.featureGroup(Object.values(areas));
+                map.fitBounds(group.getBounds(), { padding: [20, 20] });
+            });
+            
+            document.getElementById('btnIniciarTarefaNaMinhaArea').addEventListener('click', function() {
+                if (!navigator.geolocation) {
+                    alert('Geolocalização não suportada pelo navegador');
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        const areaUsuario = verificarAreaUsuario(lat, lng);
+                        
+                        if (areaUsuario) {
+                            const area = areasConfig[areaUsuario];
+                            if (area.status === 'aguardando') {
+                                iniciarAtividade(areaUsuario);
+                            } else {
+                                alert('Você está na ' + area.nome + ', mas ela já está em ' + area.status);
+                            }
+                        } else {
+                            alert('Você não está dentro de nenhuma área monitorada');
+                        }
+                    },
+                    function(error) {
+                        alert('Erro ao obter localização: ' + error.message);
+                    }
+                );
+            });
+            
+            // Botão Nova Área
+            document.getElementById('btnNovaArea').addEventListener('click', function() {
+                if (!drawControl._map) {
+                    map.addControl(drawControl);
+                }
+                alert('Clique no ícone de polígono no canto superior direito do mapa para desenhar uma nova área.');
+            });
+            
+            // Modal de nova área
+            const modal = document.getElementById('modalNovaArea');
+            const span = document.getElementsByClassName('close')[0];
+            const btnCancelar = document.getElementById('btnCancelar');
+            
+            span.onclick = function() {
+                modal.style.display = 'none';
+                if (currentDrawnPolygon) {
+                    drawnItems.removeLayer(currentDrawnPolygon);
+                    currentDrawnPolygon = null;
+                }
+            }
+            
+            btnCancelar.onclick = function() {
+                modal.style.display = 'none';
+                if (currentDrawnPolygon) {
+                    drawnItems.removeLayer(currentDrawnPolygon);
+                    currentDrawnPolygon = null;
+                }
+            }
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                    if (currentDrawnPolygon) {
+                        drawnItems.removeLayer(currentDrawnPolygon);
+                        currentDrawnPolygon = null;
+                    }
+                }
+            }
+            
+            // Form de nova área
+            document.getElementById('formNovaArea').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!currentDrawnPolygon) {
+                    alert('Erro: Nenhum polígono foi desenhado.');
+                    return;
+                }
+                
+                const nome = document.getElementById('nomeArea').value;
+                const descricao = document.getElementById('descricaoArea').value;
+                const status = document.getElementById('statusArea').value;
+                const areaPrincipal = document.getElementById('areaPrincipal').value || null;
+                
+                // Gera um ID único para a nova área
+                const novoId = 'area_' + Date.now();
+                
+                // Obtém as coordenadas do polígono desenhado
+                const coords = currentDrawnPolygon.getLatLngs()[0].map(latlng => [latlng.lat, latlng.lng]);
+                
+                // Cria o objeto da nova área
+                const novaArea = {
+                    nome: nome,
+                    coords: coords,
+                    status: status,
+                    descricao: descricao,
+                    areaPrincipal: areaPrincipal,
+                    dataCriacao: new Date().toISOString()
+                };
+                
+                // Adiciona ao areasConfig local
+                areasConfig[novoId] = novaArea;
+                
+                // Salva no Firebase
+                salvarAreaNoFirebase(novoId, novaArea).then(() => {
+                    console.log("Nova área salva no Firebase");
+                    
+                    // Remove o polígono temporário
+                    drawnItems.removeLayer(currentDrawnPolygon);
+                    
+                    // Adiciona o polígono permanente ao mapa
+                    const estilo = estilos[status] || estilos.principal;
+                    const polygon = L.polygon(coords, estilo)
+                        .addTo(map)
+                        .bindPopup(criarPopupContent(novoId));
+                    
+                    areas[novoId] = polygon;
+                    
+                    // Atualiza os cards
+                    atualizarCards();
+                    
+                    // Fecha o modal
+                    modal.style.display = 'none';
+                    
+                    // Limpa o formulário
+                    document.getElementById('formNovaArea').reset();
+                    currentDrawnPolygon = null;
+                    
+                    alert('Área "' + nome + '" cadastrada com sucesso!');
+                    
+                }).catch((error) => {
+                    console.error("Erro ao salvar área: ", error);
+                    alert('Erro ao salvar a área. Verifique sua conexão e tente novamente.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
